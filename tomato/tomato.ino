@@ -44,7 +44,7 @@ unsigned long previousMillisDelay = 0;
 const long intervalDelay = 2000;
 const char crop[] = "TOMATO";
 bool mode = LOW;
-bool isHighTemp = false;
+bool isHighTemp = false, isDry = false;
 int fanStatus = OFF, lightStatus = OFF, pumpStatus = OFF;
 
 DHT dht(DHT_SENSOR, DHTTYPE);
@@ -141,15 +141,18 @@ void temperature_humidity() {
   if (mode) {
     Blynk.virtualWrite(SW_FAN, fanStatus);
     Blynk.virtualWrite(SW_LIGHT, lightStatus);
-    Blynk.virtualWrite(SW_PUMP, pumpStatus);
     digitalWrite(RL_FAN, fanStatus);
     digitalWrite(RL_LIGHT, lightStatus);
-    digitalWrite(RL_PUMP, pumpStatus);
+    if (!isDry) {
+      digitalWrite(RL_PUMP, pumpStatus);
+      Blynk.virtualWrite(SW_PUMP, pumpStatus);
+    }
   }
 }
 
 void soil_moisture() {
   float moisture = analogRead(SOIL_SENSOR);
+  isDry = false;
   if (!isHighTemp) {
     pumpStatus = OFF;
   }
@@ -166,6 +169,7 @@ void soil_moisture() {
   Blynk.virtualWrite(LED_SOIL, HIGH);
   if (moisture > MOIS_MAX) {
     pumpStatus = ON;
+    isDry = true;
   }
   if (mode) {
     Blynk.virtualWrite(SW_PUMP, pumpStatus);
